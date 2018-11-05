@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 16:04:00
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-05 20:52:00
+# @Last Modified time: 2018-11-05 20:58:27
 import sys
 import cv2  # imread
 import torch
@@ -28,8 +28,8 @@ result_path = '/home/song/srpn/result/'
 
 # warm up
 for i in range(10):
-    net.temple(torch.autograd.Variable(torch.FloatTensor(1, 3, 127, 127)).cuda())
-    net(torch.autograd.Variable(torch.FloatTensor(1, 3, 255, 255)).cuda())
+	net.temple(torch.autograd.Variable(torch.FloatTensor(1, 3, 127, 127)).cuda())
+	net(torch.autograd.Variable(torch.FloatTensor(1, 3, 255, 255)).cuda())
 idx=0
 
 names = [name for name in os.listdir('/home/song/srpn/dataset/otb100')]
@@ -68,11 +68,14 @@ for ids, x in enumerate(os.walk(OTB100_path)):
 		ttime=0
 
 		# 第二张图直到结尾作为搜索图
+		if len(imgpath) == 1:
+			print(name + 'have only one img')
+			continue
 		for imgs in imgpath[1:]:
 			im = cv2.imread(imgs)
 			ttime1=time.time()
 			state = SiamRPN_track(state, im)  # track
-    		res = cxy_wh_2_rect(state['target_pos'], state['target_sz'])
+			res = cxy_wh_2_rect(state['target_pos'], state['target_sz'])
 			bbox.append(res)
 			ttime=ttime+time.time()-ttime1
 
