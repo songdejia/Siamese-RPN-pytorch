@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 16:04:00
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-05 20:58:27
+# @Last Modified time: 2018-11-07 10:16:45
 import sys
 import cv2  # imread
 import torch
@@ -41,9 +41,10 @@ for i, name in enumerate(names):
 """
 for ids, x in enumerate(os.walk(OTB100_path)):
 	it1, it2, it3 = x #it1 **/img   it2 []  it3 [img1, img2, ...] 
-	if it1.rfind('img')!=-1 and len(os.listdir(it1)) > 50:#Python rfind() 返回字符串最后一次出现的位置(从右向左查询)，如果没有匹配项则返回-1。
+	if it1.rfind('img')!=-1 and len(it3) > 50:#Python rfind() 返回字符串最后一次出现的位置(从右向左查询)，如果没有匹配项则返回-1。
 		name = it1.split('/')[-2]
 		imgpath=[]
+		it3 = sorted(it3)
 		for inames in it3:
 			imgpath.append(os.path.join(it1, inames))
 
@@ -66,15 +67,27 @@ for ids, x in enumerate(os.walk(OTB100_path)):
 		bbox=[];
 		totalframe=len(imgpath)
 		ttime=0
-
+		save_template_dir =  os.path.join('/home/song/srpn/tmp', name)
+		if not os.path.exists(save_template_dir):
+			os.makedirs(save_template_dir)
+		save_template_file = os.path.join('/home/song/srpn/tmp', name, '0_template.jpg')
+		template = state['template'].astype(np.int32)
+		cv2.imwrite(save_template_file, template)
+		print('save template at {}'.format(save_template_file))
+		
 		# 第二张图直到结尾作为搜索图
 		if len(imgpath) == 1:
 			print(name + 'have only one img')
 			continue
-		for imgs in imgpath[1:]:
+
+
+		for ids, imgs in enumerate(imgpath[1:]):
+			"""
+			the index img to detect
+			"""
 			im = cv2.imread(imgs)
 			ttime1=time.time()
-			state = SiamRPN_track(state, im)  # track
+			state = SiamRPN_track(state, im, ids, name)  # track, ids img for name class
 			res = cxy_wh_2_rect(state['target_pos'], state['target_sz'])
 			bbox.append(res)
 			ttime=ttime+time.time()-ttime1

@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# @Author: Song Dejia
+# @Date:   2018-11-05 21:53:12
+# @Last Modified by:   Song Dejia
+# @Last Modified time: 2018-11-06 10:49:11
 # --------------------------------------------------------
 # DaSiamRPN
 # Licensed under The MIT License
@@ -33,6 +38,10 @@ def im_to_numpy(img):
 
 
 def im_to_torch(img):
+    """
+    cv img [h, w, c]
+    torch  [c, h, w]
+    """
     img = np.transpose(img, (2, 0, 1))  # C*H*W
     img = to_torch(img).float()
     return img
@@ -45,27 +54,45 @@ def torch_to_img(img):
 
 
 def get_subwindow_tracking(im, pos, model_sz, original_sz, avg_chans, out_mode='torch', new=False):
+    """
+    img  -- original image
+    pos  -- [c_x, c_y]
+    model_sz 127
+    original s_ -> sqrt(w_ * h_)
+    avg
 
+    template是必须正方形
+    detection不是正方形
+    """
+
+    #example 放大后防止溢出
     if isinstance(pos, float):
         pos = [pos, pos]
     sz = original_sz
     im_sz = im.shape
     c = (original_sz+1) / 2
+
+    #context_xmin/xmax 代表变化后的template的坐标（可能为负）
     context_xmin = round(pos[0] - c)  # floor(pos(2) - sz(2) / 2);
     context_xmax = context_xmin + sz - 1
     context_ymin = round(pos[1] - c)  # floor(pos(1) - sz(1) / 2);
     context_ymax = context_ymin + sz - 1
+
+    # 如果大于0 则不pad
+    # 如果溢出了 则pad一定大小的距离
     left_pad = int(max(0., -context_xmin))
     top_pad = int(max(0., -context_ymin))
     right_pad = int(max(0., context_xmax - im_sz[1] + 1))
     bottom_pad = int(max(0., context_ymax - im_sz[0] + 1))
 
+    # 在pad后的原图上重新标注template信息
     context_xmin = context_xmin + left_pad
     context_xmax = context_xmax + left_pad
     context_ymin = context_ymin + top_pad
     context_ymax = context_ymax + top_pad
 
     # zzp: a more easy speed version
+    # 用avg来填充边界部分
     r, c, k = im.shape
     if any([top_pad, bottom_pad, left_pad, right_pad]):
         te_im = np.zeros((r + top_pad + bottom_pad, c + left_pad + right_pad, k), np.uint8)  # 0 is better than 1 initialization
