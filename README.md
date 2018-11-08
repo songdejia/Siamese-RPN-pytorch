@@ -9,12 +9,18 @@ This work is based on [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) 
 + 1.Network Architecture
 <div align=left><img width="900" height="300" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
 
-+ 2.Visualization for dataloader(template 127 * 127 and detection 271 * 271)
++ 2.Visualization for dataloader : template 127 * 127 and detection 271 * 271
+
 **template**
+
 <div align=left><img width="127" height="127" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/000_a_template.jpg"/></div>
+
 **search image**
+
 <div align=left><img width="271" height="271" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_input.jpg"/></div>
+
 **output**
+
 <div align=left><img width="480" height="640" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_output.jpg"/></div>
 
 + 3.How CNN backpropogation works in out1 * out2(convolution). 
