@@ -12,7 +12,7 @@ This work is based on [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) 
 + 2.Visualization for dataloader(template 127 * 127 and detection 271 * 271)
 <div align=left><img width="127" height="127" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/000_a_template.jpg"/></div>
 <div align=left><img width="271" height="271" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_input.jpg"/></div>
-<div align=left><img width="640" height="480" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_output.jpg"/></div>
+<div align=left><img width="480" height="640" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_output.jpg"/></div>
 
 + 3.How CNN backpropogation works in out1 * out2(convolution).
 	It is easy to fall into the trap of abstracting away the learning process — believing that you can simply stack arbitrary layers together and backprop will “magically make them work” on your data.
@@ -21,8 +21,11 @@ This work is based on [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) 
 	Prerequirement [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant) [chinese](https://zh.wikipedia.org/wiki/%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5)
 
 + 4.Train
+	This part is ongoing.
 
 
++ 5.Test
+	You can use this version to test OTB50/100.
 
 
 
