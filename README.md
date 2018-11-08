@@ -15,16 +15,19 @@ This work is based on [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) 
 <div align=left><img width="480" height="640" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_output.jpg"/></div>
 
 + 3.How CNN backpropogation works in out1 * out2(convolution).
-	It is easy to fall into the trap of abstracting away the learning process — believing that you can simply stack arbitrary layers together and backprop will “magically make them work” on your data.
-	Chinese people [strongly recommend](https://www.zhihu.com/question/27239198) step1:compute tmp d, step2:compute dw
-	(if you want to change something, compute d toward it)
-	Prerequirement [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant) [chinese](https://zh.wikipedia.org/wiki/%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5)
 
-+ 4.Train
++ It is easy to fall into the trap of abstracting away the learning process — believing that you can simply stack arbitrary layers together and backprop will “magically make them work” on your data.
+Chinese people [strongly recommend](https://www.zhihu.com/question/27239198) step1:compute tmp d, step2:compute dw
+(if you want to change something, compute d toward it)
+
++ Prerequirement:
+1. [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant).
+2. [chinese](https://zh.wikipedia.org/wiki/%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5).
+
++ 4.Train:
 	This part is ongoing.
 
-
-+ 5.Test
++ 5.Test:
 	You can use this version to test OTB50/100.
 
 
