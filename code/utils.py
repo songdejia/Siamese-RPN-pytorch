@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 21:53:12
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-06 10:49:11
+# @Last Modified time: 2018-11-08 16:00:53
 # --------------------------------------------------------
 # DaSiamRPN
 # Licensed under The MIT License
@@ -56,15 +56,14 @@ def torch_to_img(img):
 def get_subwindow_tracking(im, pos, model_sz, original_sz, avg_chans, out_mode='torch', new=False):
     """
     img  -- original image
-    pos  -- [c_x, c_y]
-    model_sz 127
-    original s_ -> sqrt(w_ * h_)
+    pos  -- [c_x, c_y]  
+    model_sz 127                   最后需要resize的大小
+    original s_ -> sqrt(w_ * h_)   对target操作后的size
     avg
 
     template是必须正方形
     detection不是正方形
     """
-
     #example 放大后防止溢出
     if isinstance(pos, float):
         pos = [pos, pos]

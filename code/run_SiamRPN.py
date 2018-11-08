@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 19:29:07
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-07 10:31:12
+# @Last Modified time: 2018-11-08 17:07:31
 # --------------------------------------------------------
 # DaSiamRPN
 # Licensed under The MIT License
@@ -17,32 +17,56 @@ import sys
 
 
 from utils import get_subwindow_tracking
+"""
+target size 127
+stride 8
+detection size 271
+total 127 + (19-1)*8 = 271
+"""
 
 
 def generate_anchor(total_stride, scales, ratios, score_size):
+    """
+    生成anchor
+    total_stride 8
+    scales = [8, ]
+    ratios = [0.33, 0.5, 1, 2, 3]
+    score_size = 19
+
+    产生top-left and w,h的
+    """
     anchor_num = len(ratios) * len(scales)
     anchor = np.zeros((anchor_num, 4),  dtype=np.float32)
-    size = total_stride * total_stride
+    size = total_stride * total_stride # 8 * 8
     count = 0
+    #这里相当于是计算了一个位置的anchor 
+    #这个位置各个尺度各个比例都算了wh ，xy 待定
+    #每个位置都wh是确定的
     for ratio in ratios:
-        ws = int(np.sqrt(size / ratio))
-        hs = int(ws * ratio)
+        ws = int(np.sqrt(size / ratio)) # 8 / sqrt(ratio)
+        hs = int(ws * ratio)            # 8 * sqrt(ratio)
         for scale in scales:
-            wws = ws * scale
-            hhs = hs * scale
+            wws = ws * scale            # 64 / sqrt(ratio)
+            hhs = hs * scale            # 64 * sqrt(ratio)
             anchor[count, 0] = 0
             anchor[count, 1] = 0
             anchor[count, 2] = wws
             anchor[count, 3] = hhs
             count += 1
 
+    #重复把每个位置都anchor都堆叠起来
+    #并填充中心点
     anchor = np.tile(anchor, score_size * score_size).reshape((-1, 4))
-    ori = - (score_size / 2) * total_stride
+    ori = - (score_size / 2) * total_stride #这里anchor是以中心为对称点的9，1，9
+    #print([ori + total_stride * dx for dx in range(score_size)])
+    #[-72, -64, -56, -48, -40, -32, -24, -16, -8, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72]
+    #
     xx, yy = np.meshgrid([ori + total_stride * dx for dx in range(score_size)],
                          [ori + total_stride * dy for dy in range(score_size)])
     xx, yy = np.tile(xx.flatten(), (anchor_num, 1)).flatten(), \
              np.tile(yy.flatten(), (anchor_num, 1)).flatten()
     anchor[:, 0], anchor[:, 1] = xx.astype(np.float32), yy.astype(np.float32)
+
     return anchor
 
 
@@ -70,7 +94,10 @@ def tracker_eval(net, x_crop, target_pos, target_sz, window, scale_z, p, ids, na
 
     delta = delta.permute(1, 2, 3, 0).contiguous().view(4, -1).data.cpu().numpy()
     score = F.softmax(score.permute(1, 2, 3, 0).contiguous().view(2, -1), dim=0).data[1, :].cpu().numpy()
-
+    """
+    for i in range(p.anchor.shape[0]):
+        print('anchor  ====>  {}'.format(p.anchor[i]))
+    """
     delta[0, :] = delta[0, :] * p.anchor[:, 2] + p.anchor[:, 0]
     delta[1, :] = delta[1, :] * p.anchor[:, 3] + p.anchor[:, 1]
     delta[2, :] = np.exp(delta[2, :]) * p.anchor[:, 2]
@@ -80,33 +107,37 @@ def tracker_eval(net, x_crop, target_pos, target_sz, window, scale_z, p, ids, na
     # delta[2, :] is w = exp(w, delta)
     # delta[3, :] is h = exp(h, delta)
 
+    # compute change ratio (r, 1/r)
     def change(r):
         return np.maximum(r, 1./r)
 
+    # compute size of larger area
     def sz(w, h):
         pad = (w + h) * 0.5
         sz2 = (w + pad) * (h + pad)
         return np.sqrt(sz2)
-
+    # compute size of larger area, input []
     def sz_wh(wh):
         pad = (wh[0] + wh[1]) * 0.5
         sz2 = (wh[0] + pad) * (wh[1] + pad)
         return np.sqrt(sz2)
 
-    # size penalty
-    s_c = change(sz(delta[2, :], delta[3, :]) / (sz_wh(target_sz)))  # scale penalty, bbox scale ratio
+    ##############################################################
+    # score => pscore => pscore+window
+    # size penalty, delta is proposal
+    s_c = change(sz(delta[2, :], delta[3, :]) / (sz_wh(target_sz)))  # scale penalty, bbox scale ratio(area ratio)
     r_c = change((target_sz[0] / target_sz[1]) / (delta[2, :] / delta[3, :]))  # ratio penalty
 
     penalty = np.exp(-(r_c * s_c - 1.) * p.penalty_k)
     pscore = penalty * score
 
-    # window float
+    # window float, 
     pscore = pscore * (1 - p.window_influence) + window * p.window_influence
     best_pscore_id = np.argmax(pscore)
 
     target = delta[:, best_pscore_id] / scale_z
     target_sz = target_sz / scale_z
-    lr = penalty[best_pscore_id] * score[best_pscore_id] * p.lr
+    lr = penalty[best_pscore_id] * score[best_pscore_id] * p.lr # a kind of score
 
     res_x = target[0] + target_pos[0]
     res_y = target[1] + target_pos[1]
@@ -139,7 +170,7 @@ def tracker_eval(net, x_crop, target_pos, target_sz, window, scale_z, p, ids, na
     save_dir_path = os.path.join(root_path, name)
     if not os.path.exists(save_dir_path):
         os.makedirs(save_dir_path)
-    img_file = os.path.join(save_dir_path, '{:03d}.jpg'.format(ids+1))
+    img_file = os.path.join(save_dir_path, '{:03d}_detection_output.jpg'.format(ids+1))
     cv2.imwrite(img_file, original_img)
     print('save at {}'.format(img_file))
     ##################################################################
@@ -160,8 +191,6 @@ def SiamRPN_init(im, target_pos, target_sz, net):
     state['p']  config for tracker
     state['net']
     state['avg_chan'] 通道均值
-
-
     """
     state = dict()
     p = TrackerConfig()
@@ -175,6 +204,9 @@ def SiamRPN_init(im, target_pos, target_sz, net):
         p.instance_size = 271
 
     # Input size - Template size
+    # 计算每行有多少个感受野
+    # 每个感受野size instance_size
+    # 每次移动total_stride
     p.score_size = (p.instance_size - p.exemplar_size) / p.total_stride + 1
 
     p.anchor = generate_anchor(p.total_stride, p.scales, p.ratios, p.score_size)
@@ -189,12 +221,16 @@ def SiamRPN_init(im, target_pos, target_sz, net):
     # w_ -> w + (w+h)/2
     # h_ -> h + (w+h)/2 
     # s_ -> sqrt(w_ * h_)
+    # target是实际bg 而s_z是相当于把bg变成了正方形
     wc_z = target_sz[0] + p.context_amount * sum(target_sz)
     hc_z = target_sz[1] + p.context_amount * sum(target_sz)
     s_z = round(np.sqrt(wc_z * hc_z))
     
     # initialize the exemplar
     # 将溢出部分用avg补充
+    # target_pos是中心点
+    # s_z是归一后正方形大小
+    # exempler_size是后面需要resize的127
     z_crop = get_subwindow_tracking(im, target_pos, p.exemplar_size, s_z, avg_chans)
     template = z_crop.numpy().transpose((1,2,0))
     state['template']=template
@@ -203,10 +239,8 @@ def SiamRPN_init(im, target_pos, target_sz, net):
     net.temple(z.cuda())
 
     if p.windowing == 'cosine':
-        """
-        outer (x1, x2)
-        x1中的每个值变为x2行向量的倍数
-        """
+        #outer (x1, x2)
+        #x1中的每个值变为x2行向量的倍数
         window = np.outer(np.hanning(p.score_size), np.hanning(p.score_size))
     elif p.windowing == 'uniform':
         window = np.ones((p.score_size, p.score_size))
@@ -239,7 +273,16 @@ def SiamRPN_track(state, im, ids, name):
     s_x = s_z + 2 * pad
 
     # extract scaled crops for search region x at previous target position
+    # 这里相当于目标的位置仍然在原位
+    # 然后以此中心截取 s_x 并且做缩放
+    # 这样做的缺点在于如果高速移动 就容易crop不到
     x_crop = Variable(get_subwindow_tracking(im, target_pos, p.instance_size, round(s_x), avg_chans).unsqueeze(0))
+    #print(x_crop.shape)#(1L, 3L, 271L, 271L)
+    save_img = x_crop.data.squeeze(0).numpy().transpose((1,2,0)).astype(np.int32)
+    save_path = os.path.join('/home/song/srpn/tmp', name, '{:03d}_detection_input.jpg'.format(ids))
+    cv2.imwrite(save_path, save_img)
+    print('save detection input image @ {}'.format(save_path))
+
     target_pos, target_sz, score = tracker_eval(net, x_crop.cuda(), target_pos, target_sz * scale_z, window, scale_z, p, ids, name, im)
     target_pos[0] = max(0, min(state['im_w'], target_pos[0]))
     target_pos[1] = max(0, min(state['im_h'], target_pos[1]))

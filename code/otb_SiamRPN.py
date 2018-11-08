@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 16:04:00
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-07 10:16:45
+# @Last Modified time: 2018-11-08 16:38:20
 import sys
 import cv2  # imread
 import torch
@@ -55,6 +55,9 @@ for ids, x in enumerate(os.walk(OTB100_path)):
 		else:
 			toks=map(float, gt.split('	'))
 
+		# ground truth是左上角点和w,h
+		# target_pos 目标中心点
+		# target_sz  w,h
 		cx=toks[0]+toks[2]*0.5
 		cy=toks[1]+toks[3]*0.5
 		w=toks[2]
@@ -67,19 +70,18 @@ for ids, x in enumerate(os.walk(OTB100_path)):
 		bbox=[];
 		totalframe=len(imgpath)
 		ttime=0
-		save_template_dir =  os.path.join('/home/song/srpn/tmp', name)
+		save_template_dir = os.path.join('/home/song/srpn/tmp', name)
 		if not os.path.exists(save_template_dir):
 			os.makedirs(save_template_dir)
-		save_template_file = os.path.join('/home/song/srpn/tmp', name, '0_template.jpg')
+		save_template_file = os.path.join('/home/song/srpn/tmp', name, '000_a_template.jpg')
 		template = state['template'].astype(np.int32)
 		cv2.imwrite(save_template_file, template)
 		print('save template at {}'.format(save_template_file))
-		
+
 		# 第二张图直到结尾作为搜索图
 		if len(imgpath) == 1:
 			print(name + 'have only one img')
 			continue
-
 
 		for ids, imgs in enumerate(imgpath[1:]):
 			"""
