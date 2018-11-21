@@ -1,0 +1,1 @@
+python test_siamrpn.py --checkpoint_path=/home/song/srpn/weight/epoch_0050_weights.pth.tar

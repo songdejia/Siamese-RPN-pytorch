@@ -1,47 +1,59 @@
-### Siamese-RPN
+# Siamese-RPN-pytorch
+[Tensorflow version](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates.
 
 This is a re-implementation for [High Performance Visual Tracking with Siamese Region Proposal Network](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.
+Former work [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) cant backward properly, so some modification has been done.
+Code_v1.0 is available for traning, you should change your dataset as vot2013 format.
 
 
-This work is based on [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) but I think some tricks is available.
-
-### Introduction
-+ 1.Network Architecture
-<div align=left><img width="900" height="300" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
-
-+ 2.Visualization for dataloader : template 127 * 127 and detection 271 * 271
-
-**template**
-
-<div align=left><img width="127" height="127" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/000_a_template.jpg"/></div>
-
-**search image**
-
-<div align=left><img width="271" height="271" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_input.jpg"/></div>
-
-**output**
-
-<div align=left><img width="480" height="640" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/001_detection_output.jpg"/></div>
-
-**pos(red)/neg(green) anchors in train phase**
-
-<div align=left><img width="271" height="271" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/pos_anchors.jpg"/></div>
+## Getting Started
+You need to prepare for dataset with the format like [vot2013](http://www.votchallenge.net/vot2013/)
 
 
-+ 3.How CNN backpropogation works in out1 * out2(convolution). 
-It is easy to fall into the trap of abstracting away the learning process — believing that you can simply stack arbitrary layers together and backprop will “magically make them work” on your data. 
-Chinese people [strongly recommend](https://www.zhihu.com/question/27239198) step1:compute tmp d, step2:compute dw 
-(if you want to change something, compute d toward it) 
-Prerequirement: 
-[Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant). 
-[chinese](https://zh.wikipedia.org/wiki/%E9%9B%85%E5%8F%AF%E6%AF%94%E7%9F%A9%E9%98%B5). 
+### Prerequisites
+
+```
+pip install shapely
+```
 
 
-+ 4.Train: 
-This part is ongoing.
+## Running the training 
 
-+ 5.Test: 
-You can use this version to test OTB50/100.
+```
+git clone https://github.com/songdejia/siamese-RPN
+
+cd code_v1.0
+
+python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.01
+```
+
+### Visualization for debug
+
+** bbox in detection ** 
+
+green -- ground truth which is got by pos anchor shift with reg_target
+
+red   -- bbox which is got by pos anchor with reg_pred
+
+black -- bbox with highest score
+
+<div align=center><img width="400" height="400" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/bbox_in_detection.jpg"/></div>
+
+
+** proposal in original image **
+<div align=center><img width="640" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/bbox_in_origin.jpg"/></div>
+
+
+## Authors
+
+* **Bo Li** - *paper* - [Siamese-RPN](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf)
+* **De jiasong** - *code* - [Siamese-RPN-pytorch](https://github.com/songdejia/siamese-RPN)
+* **Makalo**     - *code* - [Siamese-RPN-tensorflow](https://github.com/makalo/Siamese-RPN-tensorflow.git)
+
+
+
+
+
 
 
 
