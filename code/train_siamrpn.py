@@ -2,35 +2,39 @@
 # @Author: Song Dejia
 # @Date:   2018-11-09 10:06:59
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-19 17:18:45
+# @Last Modified time: 2018-11-21 09:56:37
 import os
+import os.path as osp
 import random
+import time
 import sys; sys.path.append('../')
 import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
+import torch.nn.functional as F
 import argparse
+from PIL import Image, ImageOps, ImageStat, ImageDraw
 from data_loader import TrainDataLoader
-from net import SiameseRPN
+from net import SiameseRPN, SiameseRPN_bn
 from torch.nn import init
 
 parser = argparse.ArgumentParser(description='PyTorch SiameseRPN Training')
 
-parser.add_argument('--train_path', default='/home/song/srpn/dataset/vot2013', metavar='DIR',help='path to dataset')
+parser.add_argument('--train_path', default='/home/song/srpn/dataset/vot13', metavar='DIR',help='path to dataset')
 
 parser.add_argument('--weight_dir', default='/home/song/srpn/weight', metavar='DIR',help='path to weight')
 
 parser.add_argument('--checkpoint_path', default=None, help='resume')
 
-parser.add_argument('--max_epoches', default=100, type=int, metavar='N', help='number of total epochs to run')
+parser.add_argument('--max_epoches', default=10000, type=int, metavar='N', help='number of total epochs to run')
 
 parser.add_argument('--max_batches', default=0, type=int, metavar='N', help='number of batch in one epoch')
 
 parser.add_argument('--init_type',  default='xavier', type=str, metavar='INIT', help='init net')
 
-parser.add_argument('--lr', default=0.1, type=float, metavar='LR', help='initial learning rate')
+parser.add_argument('--lr', default=0.001, type=float, metavar='LR', help='initial learning rate')
 
 parser.add_argument('--momentum', default=0.9, type=float, metavar='momentum', help='momentum')
 
@@ -76,31 +80,101 @@ def main():
         start = 0
 
     """ train phase """
-    closses, rlosses = AverageMeter(), AverageMeter()
+    closses, rlosses, tlosses = AverageMeter(), AverageMeter(), AverageMeter()
     for epoch in range(start, args.max_epoches):
         cur_lr = adjust_learning_rate(args.lr, optimizer, epoch, gamma=0.1)
         index_list = range(data_loader.__len__()) 
-        for example in range(args.max_batches):
+        #for example in range(args.max_batches):
+        for example in range(900):
             ret = data_loader.__get__(random.choice(index_list)) 
             template = ret['template_tensor'].cuda()
             detection= ret['detection_tensor'].cuda()
-            pos_neg_diff = ret['pos_neg_diff_tensor'].cuda()
+            pos_neg_diff = ret['pos_neg_diff_tensor'].cuda() if ret['pos_neg_diff_tensor'] is not None else None
+            
             cout, rout = model(template, detection)
             
             predictions = (cout, rout)
             targets = pos_neg_diff
 
-            closs, rloss = criterion(predictions, targets)
-            loss = closs + rloss
+            area = ret['area_target_in_resized_detection']
+            num_pos = len(np.where(pos_neg_diff == 1)[0])
+            if area == 0 or num_pos == 0 or pos_neg_diff is None:
+                continue
+
+
+
+            closs, rloss, loss, reg_pred, reg_target, pos_index, neg_index = criterion(predictions, targets)
+            
+            # debug for class
+            cout = cout.squeeze().permute(1, 2, 0).reshape(-1, 2)
+            cout = cout.cpu().detach().numpy()
+            print(cout.shape)
+            score = 1/(1 + np.exp(cout[:,0]-cout[:,1]))
+            print(score[pos_index])
+            print(score[neg_index])
+            #time.sleep(1)
+
+            # debug for reg
+            tmp_dir = '/home/song/srpn/tmp/visualization/7_train_debug_pos_anchors'
+            if not os.path.exists(tmp_dir):
+                os.makedirs(tmp_dir)
+            detection = ret['detection_cropped_resized'].copy()
+            draw = ImageDraw.Draw(detection)
+            pos_anchors = ret['pos_anchors'].copy()
+            
+            # pos anchor的回归情况
+            x = pos_anchors[:,0] + pos_anchors[:, 2] * reg_pred[pos_index, 0].cpu().detach().numpy()
+            y = pos_anchors[:,1] + pos_anchors[:, 3] * reg_pred[pos_index, 1].cpu().detach().numpy()
+            w = pos_anchors[:,2] * np.exp(reg_pred[pos_index, 2].cpu().detach().numpy())
+            h = pos_anchors[:,3] * np.exp(reg_pred[pos_index, 3].cpu().detach().numpy())
+            x1s, y1s, x2s, y2s = x - w//2, y - h//2, x + w//2, y + h//2
+            for i in range(2):
+                x1, y1, x2, y2 = x1s[i], y1s[i], x2s[i], y2s[i]
+                draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='red') #predict
+            
+            # 应当的gt
+            x = pos_anchors[:,0] + pos_anchors[:, 2] * reg_target[pos_index, 0].cpu().detach().numpy()
+            y = pos_anchors[:,1] + pos_anchors[:, 3] * reg_target[pos_index, 1].cpu().detach().numpy()
+            w = pos_anchors[:,2] * np.exp(reg_target[pos_index, 2].cpu().detach().numpy())
+            h = pos_anchors[:,3] * np.exp(reg_target[pos_index, 3].cpu().detach().numpy())
+            x1s, y1s, x2s, y2s = x - w//2, y-h//2, x + w//2, y + h//2
+            for i in range(2):
+                x1, y1, x2, y2 = x1s[i], y1s[i], x2s[i], y2s[i]
+                draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='green') #gt
+
+            # 找分数zui da de,
+            m_indexs = np.argsort(score)[::-1][:5]
+            for m_index in m_indexs:
+                diff = reg_pred[m_index].cpu().detach().numpy()
+                anc  = ret['anchors'][m_index]
+                x = anc[0] + anc[0] * diff[0]
+                y = anc[1] + anc[1] * diff[1]
+                w = anc[2]*np.exp(diff[2])
+                h = anc[3]*np.exp(diff[3])
+                x1, y1, x2, y2 = x - w//2, y - h//2, x + w//2, y + h//2
+                draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=2, fill='black')
+
+
+            save_path = osp.join(tmp_dir, 'epoch_{:04d}_{:04d}_{:02d}.jpg'.format(epoch, example, i))
+            detection.save(save_path)
+
+            closs_ = closs.cpu().item()
+            if np.isnan(closs_): 
+               sys.exit(0)
+
+            #loss = closs + rloss
             closses.update(closs.cpu().item())
             rlosses.update(rloss.cpu().item())
+            tlosses.update(loss.cpu().item())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            #time.sleep(1)
 
-            if example % inter == 0:
-                print("epoch:{:04d} example:{:06d} lr:{:.2f} closs:{:.2f}\trloss:{:.2f}".format(epoch, example, cur_lr, closses.avg, rlosses.avg))
+            print("Epoch:{:04d} example:{:06d} lr:{:.7f} closs:{:.6f} \t rloss:{:.6f} \t tloss:{:.6f}".format(epoch, example+1, cur_lr, closses.avg, rlosses.avg, tlosses.avg ))
+
+
     
         if epoch % 5 == 0 :
             file_path = os.path.join(args.weight_dir, 'epoch_{:04d}_weights.pth.tar'.format(epoch))
@@ -135,32 +209,37 @@ def init_weights(net, init_type='normal', gain=0.02):
     #print('initialize network with %s' % init_type)
     net.apply(init_func)
 
-
-
 class MultiBoxLoss(nn.Module):
     def __init__(self):
         super(MultiBoxLoss, self).__init__()
-        self.closs = torch.nn.CrossEntropyLoss()
-        self.rloss = torch.nn.SmoothL1Loss()
 
     def forward(self, predictions, targets):
+        print('+++++++++++++++++++++++++++++++++++')
         cout, rout = predictions
-        cout = cout.reshape(1, 2, -1)
-        rout = rout.reshape(-1, 4)
-        class_gt, diff = targets[:,0].unsqueeze(0).long(), targets[:,1:]
-        closs = self.closs(cout, class_gt)#1,2,*  1,*
 
-        pos_index = np.where(class_gt == 1)[1]
-        if pos_index.shape[0] == 0:
-            rloss = torch.FloatTensor([0]).cuda()
-        else:
-            rout_pos = rout[pos_index]
-            diff_pos = diff[pos_index]
-            
-            #print(rout_pos)
-            #print(diff_pos)
-            rloss = self.rloss(rout_pos, diff_pos) #16
-        return closs/64, rloss/16 
+        """ class """
+
+        class_pred   = cout.squeeze().permute(1,2,0).reshape(-1, 2)
+        class_target = targets[:, 0].long()
+        pos_index = list(np.where(class_target == 1)[0])
+        neg_index = list(np.where(class_target == 0)[0])
+        class_target = class_target[pos_index + neg_index]
+        class_pred   = class_pred[pos_index + neg_index]
+
+        closs = F.cross_entropy(class_pred, class_target, size_average=False, reduce=False)
+        closs = torch.div(torch.sum(closs[np.where(class_target != -100)]), 64)
+        
+        reg_pred = rout.view(-1, 4)
+        reg_target = targets[:, 1:] #[1445, 4]
+        rloss = F.smooth_l1_loss(reg_pred, reg_target, size_average=False, reduce=False)
+        rloss = torch.div(torch.sum(rloss[np.where(class_target == 1)]), 16)
+
+
+        #debug vis pos anchor
+        loss = closs + rloss
+        return closs, rloss, loss, reg_pred, reg_target, pos_index, neg_index
+
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
