@@ -1,13 +1,18 @@
 # Siamese-RPN-pytorch
-[Tensorflow version](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates.
+[Tensorflow version](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates[@makalo](https://github.com/makalo).
 
-This is a re-implementation for [High Performance Visual Tracking with Siamese Region Proposal Network](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.
-Former work [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) cant backward properly, so some modification has been done.
-Code_v1.0 is available for traning, you should change your dataset as vot2013 format.
+This is a re-implementation for [High Performance Visual Tracking with Siamese Region Proposal Network](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018. 
+Please cite his [paper](https://arxiv.org/abs/1704.03155v2) if you find this useful. 
 
+## Note:
+**Former work [zkisthebest](https://github.com/zkisthebest/Siamese-RPN) cant backward properly**, so some modification has been done. 
+Code_v1.0 is available for traning, **you should change your dataset as vot2013 format**.
 
 ## Getting Started
 You need to prepare for dataset with the format like [vot2013](http://www.votchallenge.net/vot2013/)
+
+### Network introduction
+<div align=center><img width="640" height="360" src="https://github.com/songdejia/siamese-RPN/tree/master/screenshot/network.png"/></div>
 
 
 ### Prerequisites
@@ -17,7 +22,7 @@ pip install shapely
 ```
 
 
-## Running the training 
+### Running the training phase 
 
 ```
 git clone https://github.com/songdejia/siamese-RPN
