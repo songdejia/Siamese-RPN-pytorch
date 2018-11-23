@@ -43,7 +43,7 @@ python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001
 
 ### Visualization for debug
 
-** bbox in detection ** 
+**bbox in detection** 
 green -- ground truth which is got by pos anchor shift with reg_target  
 red   -- bbox which is got by pos anchor with reg_pred  
 black -- bbox with highest score
@@ -51,7 +51,7 @@ black -- bbox with highest score
 <div align=center><img width="400" height="400" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/bbox_in_detection.jpg"/></div>
 
 
-** proposal in original image **
+**proposal in original image**
 <div align=center><img width="640" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/bbox_in_origin.jpg"/></div>
 
 
