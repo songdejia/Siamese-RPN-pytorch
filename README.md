@@ -1,5 +1,5 @@
 # Siamese-RPN-pytorch
-- [**Tensorflow version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates  [**makalo**](https://github.com/makalo). **If you have any question, please feel free to contact us.**    
+- [**Tensorflow Version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates  [**makalo**](https://github.com/makalo). **If you have any question, please feel free to contact us.**    
 - This is a re-implementation for [**High Performance Visual Tracking with Siamese Region Proposal Network**](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.  
 - Code_v1.0 is available for traning, you should change your dataset as **VOT format**.
 
@@ -17,7 +17,6 @@ year = {2018}
 ## Getting Started
 ### Performance
 <div align=center><img width="700" height="700" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/test2.gif"/></div>
-
 
 ### Network introduction  
 <div align=center><img width="700" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
@@ -61,8 +60,7 @@ black -- bbox with highest score
 <div align=center><img width="640" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/bbox_in_origin.jpg"/></div>
 
 
-## Authors
-
+## Authors  
 * **Bo Li** - *paper* - [Siamese-RPN](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf)
 * **De jiasong** - *code* - [Siamese-RPN-pytorch](https://github.com/songdejia/siamese-RPN)
 * **Makalo**     - *code* - [Siamese-RPN-tensorflow](https://github.com/makalo/Siamese-RPN-tensorflow.git)
