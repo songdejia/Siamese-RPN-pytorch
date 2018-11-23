@@ -43,7 +43,7 @@ python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001
 
 ### Visualization for debug
 
-**bbox in detection** 
+**bbox in detection**  
 green -- ground truth which is got by pos anchor shift with reg_target  
 red   -- bbox which is got by pos anchor with reg_pred  
 black -- bbox with highest score
