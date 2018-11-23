@@ -19,7 +19,7 @@ year = {2018}
 <div align=center><img width="700" height="700" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/test2.gif"/></div>
 
 ### Network introduction  
-<div align=center><img width="700" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
+<div align=center><img width="730" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
 
 ### Environment  
 - python=3.6  
