@@ -1,9 +1,18 @@
 # Siamese-RPN-pytorch
-- [**Tensorflow version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates[**makalo**](https://github.com/makalo).  
+- [**Tensorflow version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates  [**makalo**](https://github.com/makalo). **If you have any question, please feel free to contact us.**    
 - This is a re-implementation for [**High Performance Visual Tracking with Siamese Region Proposal Network**](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.  
-- Please cite [**paper**](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) if you find this useful.  
-- Another version [**zkisthebest/Siamese-RPN**](https://github.com/zkisthebest/Siamese-RPN) have **lots of bugs**, so I have to re-implement it. 
-- Code_v1.0 is available for traning, you should change your dataset as **vot2013 format**.
+- Code_v1.0 is available for traning, you should change your dataset as **VOT format**.
+
+## Citation
+```
+Paper: @InProceedings{Li_2018_CVPR,
+author = {Li, Bo and Yan, Junjie and Wu, Wei and Zhu, Zheng and Hu, Xiaolin},
+title = {High Performance Visual Tracking With Siamese Region Proposal Network},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+month = {June},
+year = {2018}
+}
+```
 
 ## Getting Started
 ### Performance
@@ -27,7 +36,6 @@ wget http://data.votchallenge.net/vot2013/vot2013.zip
 ## Downloading YouTube-bb Data
 ```
 git clone https://github.com/mbuckler/youtube-bb.git
-
 python3 download.py ./dataset 12
 ```
 
@@ -35,9 +43,7 @@ python3 download.py ./dataset 12
 
 ```
 git clone https://github.com/songdejia/siamese-RPN
-
 cd code_v1.0
-
 python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001
 ```
 
