@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-09 10:06:59
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-21 09:56:37
+# @Last Modified time: 2018-11-22 15:24:22
 import os
 import os.path as osp
 import random
@@ -43,7 +43,7 @@ parser.add_argument('--weight_decay', '--wd', default=5e-5, type=float, metavar=
 def main():
     """ train dataloader """
     args = parser.parse_args()
-    data_loader = TrainDataLoader(args.train_path, check = False)
+    data_loader = TrainDataLoader(args.train_path, check = True)
     if not os.path.exists(args.weight_dir):
         os.makedirs(args.weight_dir)
 
@@ -172,7 +172,7 @@ def main():
             optimizer.step()
             #time.sleep(1)
 
-            print("Epoch:{:04d} example:{:06d} lr:{:.7f} closs:{:.6f} \t rloss:{:.6f} \t tloss:{:.6f}".format(epoch, example+1, cur_lr, closses.avg, rlosses.avg, tlosses.avg ))
+            print("Epoch:{:04d}\texample:{:08d}/{:08d}({:.2f})\tlr:{:.7f}\tcloss:{:.4f}\trloss:{:.4f}\ttloss:{:.4f}".format(epoch, example+1, args.max_batches, 100*(example+1)/args.max_batches, cur_lr, closses.avg, rlosses.avg, tlosses.avg ))
 
 
     

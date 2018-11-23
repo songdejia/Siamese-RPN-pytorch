@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-09 10:06:59
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-21 20:55:01
+# @Last Modified time: 2018-11-23 17:26:44
 import os
 import os.path as osp
 import random
@@ -82,6 +82,7 @@ def main():
 
     """ train phase """
     closses, rlosses, tlosses = AverageMeter(), AverageMeter(), AverageMeter()
+    steps = 0
     for epoch in range(start, args.max_epoches):
         cur_lr = adjust_learning_rate(args.lr, optimizer, epoch, gamma=0.1)
         index_list = range(data_loader.__len__()) 
@@ -105,14 +106,17 @@ def main():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-           
+            steps += 1
+
+                        
             cout = cout.cpu().detach().numpy()
             score = 1/(1 + np.exp(cout[:,0]-cout[:,1]))
 
+            # ++++++++++++ post process below just for debug ++++++++++++++++++++++++
             # ++++++++++++++++++++ v1.0 add penalty +++++++++++++++++++++++++++++++++
             if ret['pos_anchors'] is not None:
                 penalty_k = 0.055
-                tx, ty, tw, th = ret['template_target_xywh']
+                tx, ty, tw, th = ret['template_target_xywh'].copy()
                 tw *= ret['template_cropprd_resized_ratio']
                 th *= ret['template_cropprd_resized_ratio']
 
@@ -120,10 +124,13 @@ def main():
                 w = anchors[:,2] * np.exp(reg_pred[:, 2].cpu().detach().numpy())
                 h = anchors[:,3] * np.exp(reg_pred[:, 3].cpu().detach().numpy())
 
-                change_w = np.maximum(w/tw, tw/w)
-                change_h = np.maximum(h/th, th/h)
+                eps = 1e-2
+                change_w = np.maximum(w/(tw+eps), tw/(w+eps))
+                change_h = np.maximum(h/(th+eps), th/(h+eps))
                 penalty = np.exp(-(change_w + change_h - 1) * penalty_k)
                 pscore = score * penalty
+            else:
+                pscore = score
 
             # +++++++++++++++++++ v1.0 add window default cosine ++++++++++++++++++++++
             score_size = 17
@@ -133,26 +140,35 @@ def main():
             score_old = score
             score = pscore #from 0.2 - 0.7
 
-            # +++++++++++++++++++ v1.0 nms ++++++++++++++++++++++++++++++++++++++++++++
-            nms = True if epoch > 0 else False
-            if nms:
-                start = time.time()
-                anchors = ret['anchors'].copy()
-                nms_threshold = 0.9
-                x = anchors[:,0] + anchors[:, 2] * reg_pred[:, 0].cpu().detach().numpy()
-                y = anchors[:,1] + anchors[:, 3] * reg_pred[:, 1].cpu().detach().numpy()
-                w = anchors[:,2] * np.exp(reg_pred[:, 2].cpu().detach().numpy())
-                h = anchors[:,3] * np.exp(reg_pred[:, 3].cpu().detach().numpy())
-                slist = map(reshape, [x-w//2, y-h//2, x+w//2, y-h//2, x+w//2, y+h//2, x-w//2, y+h//2, pscore])
-                s = np.hstack(slist)
+            # +++++++++++++++++++ v1.0 add nms ++++++++++++++++++++++++++++++++++++++++++++
+            nms = False
+            nms_threshold = 0.6
+            start = time.time()
+            anchors = ret['anchors'].copy()
+            x = anchors[:,0] + anchors[:, 2] * reg_pred[:, 0].cpu().detach().numpy()
+            y = anchors[:,1] + anchors[:, 3] * reg_pred[:, 1].cpu().detach().numpy()
+            w = anchors[:,2] * np.exp(reg_pred[:, 2].cpu().detach().numpy())
+            h = anchors[:,3] * np.exp(reg_pred[:, 3].cpu().detach().numpy())
+            x1 = np.clip(x-w//2, 0, 256)
+            x2 = np.clip(x+w//2, 0, 256)
+            x3 = np.clip(x+w//2, 0, 256)
+            x4 = np.clip(x-w//2, 0, 256)
+            y1 = np.clip(y-h//2, 0, 256)
+            y2 = np.clip(y-h//2, 0, 256)
+            y3 = np.clip(y+h//2, 0, 256)
+            y4 = np.clip(y+h//2, 0, 256)
+            slist = map(reshape, [x1, y1, x2, y2, x3, y3, x4, y4, score])
+            s = np.hstack(slist)
+            maxscore = max(s[:, 8])
+            if nms and maxscore > nms_threshold:
                 proposals = standard_nms(s, nms_threshold)
-                print('nms spend {:.2f}s'.format(time.time()-start))
-
-
-
+                proposals = proposals if proposals.shape[0] != 0 else s
+                print('nms spend {:.2f}ms'.format(1000*(time.time()-start)))
+            else:
+                proposals = s
             # ++++++++++++++++++++ debug for class ++++++++++++++++++++++++++++++++++++
-            print(score[pos_index])  # this should tend to be 1
-            print(score[neg_index])  # this should tend to be 0
+            # print(score[pos_index])  # this should tend to be 1
+            # print(score[neg_index])  # this should tend to be 0
 
 
             # ++++++++++++++++++++ debug for reg ++++++++++++++++++++++++++++++++++++++
@@ -164,15 +180,25 @@ def main():
             pos_anchors = ret['pos_anchors'].copy() if ret['pos_anchors'] is not None else None
             
             if pos_anchors is not None:
+                # draw pos anchors
+                x = pos_anchors[:, 0]
+                y = pos_anchors[:, 1]
+                w = pos_anchors[:, 2]
+                h = pos_anchors[:, 3]
+                x1s, y1s, x2s, y2s = x - w//2, y - h//2, x + w//2, y + h//2
+                for i in range(16):
+                    x1, y1, x2, y2 = x1s[i], y1s[i], x2s[i], y2s[i]
+                    draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='white') # pos anchor
+
                 # pos anchor transform to red box after prediction
                 x = pos_anchors[:,0] + pos_anchors[:, 2] * reg_pred[pos_index, 0].cpu().detach().numpy()
                 y = pos_anchors[:,1] + pos_anchors[:, 3] * reg_pred[pos_index, 1].cpu().detach().numpy()
                 w = pos_anchors[:,2] * np.exp(reg_pred[pos_index, 2].cpu().detach().numpy())
                 h = pos_anchors[:,3] * np.exp(reg_pred[pos_index, 3].cpu().detach().numpy())
                 x1s, y1s, x2s, y2s = x - w//2, y - h//2, x + w//2, y + h//2
-                for i in range(2):
+                for i in range(16):
                     x1, y1, x2, y2 = x1s[i], y1s[i], x2s[i], y2s[i]
-                    draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='red') #predict
+                    draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='red')  # predict(white -> red)
                 
                 # pos anchor should be transformed to green gt box, if red and green is same, it is overfitting
                 x = pos_anchors[:,0] + pos_anchors[:, 2] * reg_target[pos_index, 0].cpu().detach().numpy()
@@ -180,59 +206,46 @@ def main():
                 w = pos_anchors[:,2] * np.exp(reg_target[pos_index, 2].cpu().detach().numpy())
                 h = pos_anchors[:,3] * np.exp(reg_target[pos_index, 3].cpu().detach().numpy())
                 x1s, y1s, x2s, y2s = x - w//2, y-h//2, x + w//2, y + h//2
-                for i in range(2):
+                for i in range(16):
                     x1, y1, x2, y2 = x1s[i], y1s[i], x2s[i], y2s[i]
-                    draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='green')
-
-            # topX predict black bbox
-            # if no green box(gt) in detection, black box wrong is correct  
-            m_indexs = np.argsort(score)[::-1][:1]
-            for m_index in m_indexs:
-                diff = reg_pred[m_index].cpu().detach().numpy()
-                anc  = ret['anchors'][m_index]
-                x = anc[0] + anc[0] * diff[0]
-                y = anc[1] + anc[1] * diff[1]
-                w = anc[2]*np.exp(diff[2])
-                h = anc[3]*np.exp(diff[3])
-                x1, y1, x2, y2 = x - w//2, y - h//2, x + w//2, y + h//2
-                draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=2, fill='black')
-
+                    draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='green') # gt  (white -> green)
+                x1, y1, x3, y3 = x1s[0], y1s[0], x2s[0], y2s[0]
+            else:
+                x1, y1, x3, y3 = 0, 0, 0, 0
             # top1 proposal after nms (white)
             if nms:
-                index = np.argsort(proposals[:, 8])[::-1]
-                print(index.shape)
-                time.sleep(100)
-                x1, y1, x2, y2, x3, y3, x4, y4, _ = proposals[index, :8]
-                draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=3, fill='white')
-            save_path = osp.join(tmp_dir, 'epoch_{:04d}_{:04d}_{:02d}_a.jpg'.format(epoch, example, i))
+                index = np.argsort(proposals[:, 8])[::-1][0]
+                x1, y1, x2, y2, x3, y3, x4, y4, _ = proposals[index]
+                draw.line([(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)], width=3, fill='yellow')
+            save_path = osp.join(tmp_dir, 'epoch_{:010d}_{:010d}_anchor_pred.jpg'.format(epoch, example))
             detection.save(save_path)
 
+            
             # +++++++++++++++++++ v1.0 restore ++++++++++++++++++++++++++++++++++++++++
-            if not nms:
-                x3, y3 = x2, y2    
             ratio = ret['detection_cropped_resized_ratio']
-            detection_cropped = ret['detection_cropped']
-            detection_cropped_resized = ret['detection_cropped_resized']
+            detection_cropped = ret['detection_cropped'].copy()
+            detection_cropped_resized = ret['detection_cropped_resized'].copy()
             original = Image.open(ret['detection_img_path'])
             x_, y_ = ret['detection_tlcords_of_original_image']
             draw = ImageDraw.Draw(original)
             w, h = original.size
+            """ un resized """
+            x1, y1, x3, y3 = x1/ratio, y1/ratio, y3/ratio, y3/ratio
 
-            x1, y1, x3, y3 = x1/ratio, y1/ratio, y3/ratio, y3/ratio # unresized
+            """ un cropped """
+            x1 = np.clip(x_ + x1, 0, w-1).astype(np.int32) # uncropped #target_of_original_img
+            y1 = np.clip(y_ + y1, 0, h-1).astype(np.int32)
+            x3 = np.clip(x_ + x3, 0, w-1).astype(np.int32)
+            y3 = np.clip(y_ + y3, 0, h-1).astype(np.int32)
 
-            x1 = np.clip(x_ + x1, 0, w) # uncropped #target_of_original_img
-            y1 = np.clip(y_ + y1, 0, h)
-            x3 = np.clip(x_ + x3, 0, w)
-            y3 = np.clip(y_ + y3, 0, h)
-
-            draw.line([(x1, y1), (x3, y1), (x3, y3), (x1, y3), (x1, y1)], width=3, fill='black')
-            save_path = osp.join(tmp_dir, 'epoch_{:04d}_{:04d}_{:02d}_restore.jpg'.format(epoch, example, i))
+            draw.line([(x1, y1), (x3, y1), (x3, y3), (x1, y3), (x1, y1)], width=3, fill='yellow')
+            save_path = osp.join(tmp_dir, 'epoch_{:010d}_{:010d}_restore.jpg'.format(epoch, example))
             original.save(save_path)
             
-            print("Epoch:{:04d} example:{:06d} lr:{:.7f} closs:{:.6f} \t rloss:{:.6f} \t tloss:{:.6f}".format(epoch, example+1, cur_lr, closses.avg, rlosses.avg, tlosses.avg ))
+            print("Epoch:{:04d}\texample:{:06d}/{:06d}({:.2f})%\tsteps:{:010d}\tlr:{:.7f}\tcloss:{:.4f}\trloss:{:.4f}\ttloss:{:.4f}".format(epoch, example+1, args.max_batches, 100*(example+1)/args.max_batches, steps, cur_lr, closses.avg, rlosses.avg, tlosses.avg ))
 
-        if epoch % 2 == 0 :
-            file_path = os.path.join(args.weight_dir, 'epoch_{:04d}_weights.pth.tar'.format(epoch))
+        if steps % 10000 == 0:
+            file_path = os.path.join(args.weight_dir, 'weights-{:07d}.pth.tar'.format(steps))
             state = {
             'epoch' :epoch+1,
             'state_dict' :model.state_dict(),
@@ -252,10 +265,10 @@ def intersection(g, p):
     else:
         return inter/union
 
-def standard_nms(S, thres, pre_thres = 0.9):
+def standard_nms(S, thres):
     """ use pre_thres to filter """
-    index = np.where(S[:, 8] > pre_thres)[0]
-    S = S[index]
+    index = np.where(S[:, 8] > thres)[0]
+    S = S[index] # ~ 100, 4
 
     # Then use standard nms
     order = np.argsort(S[:, 8])[::-1]
@@ -311,13 +324,14 @@ class MultiBoxLoss(nn.Module):
         class_pred, class_target = class_pred[pos_index + neg_index], class_target[pos_index + neg_index]
 
         closs = F.cross_entropy(class_pred, class_target, size_average=False, reduce=False)
-        closs = torch.div(torch.sum(closs[np.where(class_target != -100)]), 64)
+        closs = torch.div(torch.sum(closs), 64)
 
         """ regression """
         reg_pred = rout
         reg_target = targets[:, 1:]
-        rloss      = F.smooth_l1_loss(reg_pred, reg_target, size_average=False, reduce=False)
-        rloss      = torch.div(torch.sum(rloss[np.where(class_target == 1)]), 16)
+        rloss = F.smooth_l1_loss(reg_pred, reg_target, size_average=False, reduce=False) #1445, 4
+        rloss = torch.div(torch.sum(rloss, dim = 1), 4)
+        rloss = torch.div(torch.sum(rloss[pos_index]), 16)
 
         loss = closs + rloss
         return closs, rloss, loss, reg_pred, reg_target, pos_index, neg_index

@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-09 17:22:06
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-21 09:39:24
+# @Last Modified time: 2018-11-21 16:58:12
 import sys
 import os
 import os.path as osp
@@ -39,8 +39,10 @@ class Anchor_ms():
         s=self.base * self.base
         w=np.sqrt(s/scale)
         h=w*scale
-        c_x=(self.base-1)//2
-        c_y=(self.base-1)//2
+        #c_x=(self.base-1)//2
+        #c_y=(self.base-1)//2
+        c_x=(self.stride-1)//2
+        c_y=(self.stride-1)//2
         anchor=np.vstack([c_x*np.ones_like(scale, dtype=np.float32),c_y*np.ones_like(scale, dtype=np.float32),w,h])
         anchor=anchor.transpose()           #[x,y,w,h]
         anchor=self.center_to_corner(anchor).astype(np.int32)#[x1,y1,x2,y2]
@@ -108,7 +110,7 @@ class Anchor_ms():
         neg[neg_ind] = 1
         return pos, neg        
 
-    def iou(self,box1,box2):
+    def iou(self, box1, box2):
         box1, box2 = box1.copy(), box2.copy()
         N=box1.shape[0]
         K=box2.shape[0]
@@ -385,7 +387,7 @@ class TrainDataLoader(object):
             save_path = osp.join(s, '{:04d}.jpg'.format(self.count))
             im.save(save_path)
         
-        """
+        
         if self.check:
             s = osp.join(self.tmp_dir, '5_all_anchors') 
             if not os.path.exists(s):
@@ -403,7 +405,7 @@ class TrainDataLoader(object):
                 draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], width=1, fill='green')
                 save_path = osp.join(s, 'img_{:04d}_anchor_{:05d}.jpg'.format(self.count, i))
                 im.save(save_path)
-        """ 
+         
 
         """ 
             pos = pos.squeeze()

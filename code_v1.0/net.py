@@ -2,7 +2,7 @@
 # @Author: Song Dejia
 # @Date:   2018-11-05 11:16:24
 # @Last Modified by:   Song Dejia
-# @Last Modified time: 2018-11-21 17:16:36
+# @Last Modified time: 2018-11-23 15:44:42
 import torch.utils.model_zoo as model_zoo
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +10,7 @@ import torch
 import time
 model_urls = {'alexnet': 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth'}
 class SiameseRPN(nn.Module):
-    def __init__(self):
+    def __init__(self, test_video=False):
         super(SiameseRPN, self).__init__()
         self.features = nn.Sequential(                  #1, 3, 256, 256
             nn.Conv2d(3, 64, kernel_size=11, stride=2), #1, 64,123, 123
@@ -67,7 +67,7 @@ class SiameseRPN(nn.Module):
         routput = F.conv2d(rinput, rkernal) 
 
         coutput = coutput.squeeze().permute(1,2,0).reshape(-1, 2)
-        routput = routput.reshape(-1, 4)
+        routput = routput.squeeze().permute(1,2,0).reshape(-1, 4)
         return coutput, routput
 
     def resume(self, weight):
