@@ -1,7 +1,15 @@
 # Siamese-RPN-pytorch
 - [**Tensorflow Version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates  [**makalo**](https://github.com/makalo). **If you have any question, please feel free to contact us.**    
 - This is a re-implementation for [**High Performance Visual Tracking with Siamese Region Proposal Network**](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.  
-- Code_v1.0 is available for traning, you should change your dataset as **VOT format**.
+- Code_v1.0 is available for traning, you should change your dataset as **VOT** format.(top-left point and w,h) 
+  If there is a break in a sequence, ues 0,0,0,0 to replace the info of this frame.
+- Dataset Tree 
+```
+-root/class1/img1.jpg
+            /...
+            /imgN.jpg
+            /groundtruth.txt
+```
 
 ## Citation
 ```
