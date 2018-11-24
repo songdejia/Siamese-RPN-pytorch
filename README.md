@@ -16,7 +16,7 @@ year = {2018}
 
 ## Getting Started
 ### Performance
-<div align=center><img width="700" height="700" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/test2.gif"/></div>
+<div align=center><img width="850" height="700" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/test2.gif"/></div>
 
 ### Network introduction  
 <div align=center><img width="730" height="360" src="https://github.com/songdejia/siamese-RPN/blob/master/screenshot/network.png"/></div>
