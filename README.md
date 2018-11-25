@@ -41,7 +41,7 @@ year = {2018}
 wget http://data.votchallenge.net/vot2013/vot2013.zip 
 ```
 
-### Download YouTube-bb Data
+### Download YouTube-BB Data
 ```
 git clone https://github.com/mbuckler/youtube-bb.git
 python3 download.py ./dataset 12
@@ -50,12 +50,11 @@ python3 download.py ./dataset 12
 ### Download pretrained model on VID with 690000 image pairs
 Pretrained model is available here [BaiduYun](https://pan.baidu.com/s/14vzkwTJWqCKCAcH-j5WdLg)
 
-### Train phase 
-
+### Training Phase 
 ```
 git clone https://github.com/songdejia/siamese-RPN
 cd code_v1.0
-python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001
+python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001 --checkpoint_path=/PATH/TO/YOUR/WEIGHT
 ```
 
 ## Visualization for debug
