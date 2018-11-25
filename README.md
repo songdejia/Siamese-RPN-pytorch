@@ -1,4 +1,5 @@
 # Siamese-RPN-pytorch
+## Introduction
 - [**Tensorflow Version**](https://github.com/makalo/Siamese-RPN-tensorflow.git) has been available by my classmates  [**makalo**](https://github.com/makalo). **If you have any question, please feel free to contact us.**    
 - This is a re-implementation for [**High Performance Visual Tracking with Siamese Region Proposal Network**](http://openaccess.thecvf.com/content_cvpr_2018/papers/Li_High_Performance_Visual_CVPR_2018_paper.pdf) with PyTorch, which is accepted at CVPR2018.  
 - Code_v1.0 is available for traning, you should change your dataset as **VOT** format(top-left point and w,h). 
@@ -35,12 +36,12 @@ year = {2018}
 - cuda=9.0  
 - shapely=1.6.4
 
-## Downloading VOT2013 Dataset
+### Downloading VOT2013 Dataset
 ```
 wget http://data.votchallenge.net/vot2013/vot2013.zip 
 ```
 
-## Downloading YouTube-bb Data
+### Downloading YouTube-bb Data
 ```
 git clone https://github.com/mbuckler/youtube-bb.git
 python3 download.py ./dataset 12
@@ -57,7 +58,7 @@ cd code_v1.0
 python train_siamrpn.py --dataroot=/PATH/TO/YOUR/DATASET --lr=0.001
 ```
 
-### Visualization for debug
+## Visualization for debug
 
 **bbox in detection**  
 green -- ground truth which is got by pos anchor shift with reg_target  
