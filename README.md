@@ -36,12 +36,12 @@ year = {2018}
 - cuda=9.0  
 - shapely=1.6.4
 
-### Downloading VOT2013 Dataset
+### Download VOT2013 Dataset
 ```
 wget http://data.votchallenge.net/vot2013/vot2013.zip 
 ```
 
-### Downloading YouTube-bb Data
+### Download YouTube-bb Data
 ```
 git clone https://github.com/mbuckler/youtube-bb.git
 python3 download.py ./dataset 12
