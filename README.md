@@ -46,6 +46,9 @@ git clone https://github.com/mbuckler/youtube-bb.git
 python3 download.py ./dataset 12
 ```
 
+### Download pretrained model on VID with 690000 image pairs
+Pretrained model is available here [BaiduYun](https://pan.baidu.com/s/14vzkwTJWqCKCAcH-j5WdLg)
+
 ### Train phase 
 
 ```
